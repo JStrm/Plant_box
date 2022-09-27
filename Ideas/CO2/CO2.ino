@@ -33,41 +33,10 @@ void setup() {
 }
 
 void loop() {
-  
- int co2 = 0;
+  int co2 = 0;
   
   Serial2.write(addArray, 9);  
   Serial2.readBytes(dataValue, 9);
   co2 = (256*(int)dataValue[2])+(int)dataValue[3];
   Serial.print("CO2: "); Serial.print(co2); Serial.println(" ppm");
-  if (co2 < 340)
-  {
-    for (int i = 0; i < 30; i++)
-    {
-      digitalWrite(LED_BUILTIN, HIGH);
-      delay(1000);
-      digitalWrite(LED_BUILTIN, LOW);
-      delay(1000);
-    }
-  }
-  else if (co2 > 1500)
-  {
-    for (int i = 0; i < 600; i++)
-    {
-      digitalWrite(LED_BUILTIN, HIGH);
-      delay(50);
-      digitalWrite(LED_BUILTIN, LOW);
-      delay(50);
-    }
-  }
-  else if (co2 > 1000)
-  {
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(60000);
-  }
-  else
-  {
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(60000);
-  }
 }

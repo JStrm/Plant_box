@@ -47,6 +47,7 @@ void setup() {
   Serial.println("3 -> Turn off self calibration.");
   Serial.println("4 -> Turn on self calibration.");
   Serial.println("5 -> See readings.");
+  Serial.println("6 -> Set span point for custom concentration.");
 }
 
 void loop() {
@@ -84,6 +85,21 @@ void loop() {
           delay(2000);
         }
         break;
+      case 6:
+        Serial.println("Input the CO2 concentration in ppm.");
+        while (Serial.available() == 0) {}
+        int co2 = Serial.readString().toInt();
+        byte customSpanPointCalibrationArray[] = {
+          0xFF, 0x01, 0x88,
+          0x07, 0xD0, 0x00,
+          0x00, 0x00, 0xA0
+        };
+        customSpanPointCalibrationArray[3] = (byte)(co2/256);
+        customSpanPointCalibrationArray[4] = (byte)(co2%256);
+        customSpanPointCalibrationArray[8] = 0x77 - customSpanPointCalibrationArray[3] - customSpanPointCalibrationArray[4];
+        Serial2.write(customSpanPointCalibrationArray, 9);
+        Serial.println("Span point set.");
+        break;
     }
     Serial.println("What do you want to do?");
     Serial.println("1 -> Set zero point.");
@@ -91,5 +107,6 @@ void loop() {
     Serial.println("3 -> Turn off self calibration.");
     Serial.println("4 -> Turn on self calibration.");
     Serial.println("5 -> See readings.");
+    Serial.println("6 -> Set span point for custom concentration.");
   }
 }

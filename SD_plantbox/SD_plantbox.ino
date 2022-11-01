@@ -9,7 +9,7 @@
 const int MHZ14_T_pin       = 7;  // CO2 sensor
 const int MHZ14_R_pin       = 8;  // CO2 sensor
 const int G328_MOS_SIG_pin  = 4;  // pump pin
-const int chipSelectSD      = 10; //Chip select for SD card reader
+const int chipSelectSD      = 10; // Chip select for SD card reader
                                   // BME uses hard coded pins
 
 // Declare bme sensor and CO2 serial
@@ -21,6 +21,8 @@ const float seaLevelPressure = 1013.25;
 
 
 void setup() {
+  pinMode(G328_MOS_SIG_pin, OUTPUT);
+
   Serial.begin(9600);
 
   // Begin software serial for MHZ14
@@ -67,7 +69,7 @@ void loop() {
   dataString += getCO2();
   dataString += ',';
 
-  if(nextPumpTime > millis()){
+  if(nextPumpTime < millis()){
     pump(12);
     nextPumpTime = millis() + (unsigned long) 12 * ((unsigned long) 60 * (unsigned long) 60 * (unsigned long) 1000);
   }

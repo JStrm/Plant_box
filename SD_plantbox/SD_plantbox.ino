@@ -21,6 +21,7 @@ const float seaLevelPressure = 1013.25;
 
 
 void setup() {
+  pinMode(LED_BUILTIN, OUTPUT);
   pinMode(G328_MOS_SIG_pin, OUTPUT);
 
   Serial.begin(9600);
@@ -75,7 +76,9 @@ void loop() {
   }
   
   writeLineToFile("log.txt", dataString);
+  digitalWrite(LED_BUILTIN, HIGH);
   delay(100000);
+  digitalWrite(LED_BUILTIN, LOW);
 }
 
 void writeLineToFile(String fileName, String string){

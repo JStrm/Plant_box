@@ -21,7 +21,6 @@ const float seaLevelPressure = 1013.25;
 
 
 void setup() {
-  pinMode(LED_BUILTIN, OUTPUT);
   pinMode(G328_MOS_SIG_pin, OUTPUT);
 
   Serial.begin(9600);
@@ -35,7 +34,8 @@ void setup() {
   BME.begin(0x76);
 
   // Heat up CO2 sensor
-  delay(10000);
+  Serial.println("Heating up CO2 sensor (50s)");
+  delay(50000);
 
   // Initialize SD card
   if (!SD.begin(chipSelectSD)) {
@@ -49,8 +49,9 @@ void setup() {
 }
 
 long nextPumpTime = 0;
+String dataString = "";
 void loop() {
-  String dataString = "";
+  dataString = "";
 
   dataString += millis();
   dataString += ',';
@@ -77,8 +78,9 @@ void loop() {
   
   writeLineToFile("log.txt", dataString);
   digitalWrite(LED_BUILTIN, HIGH);
-  delay(100000);
+  delay(9000);
   digitalWrite(LED_BUILTIN, LOW);
+  delay(1000);
 }
 
 void writeLineToFile(String fileName, String string){

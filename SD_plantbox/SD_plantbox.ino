@@ -51,43 +51,58 @@ void setup() {
   writeLineToFile("log.txt", "time(s),tempeature(°C),pressure(hPa),humidity(%),altitude(m),CO2(ppm),CO2PWM(ppm)");
 }
 
-long nextPumpTime = 0;
+unsigned long nextPumpTime = 0;
+unsigned long nextReading = 0;
+bool pumpOn = false;
 String dataString = "";
 void loop() {
-  dataString = "";
+  if (nextReading < millis())
+  {
+    dataString = "";
 
-  dataString += (millis() / (unsigned long) 1000);
-  dataString += ',';
+    dataString += (millis() / (unsigned long) 1000);
+    dataString += ',';
 
-  dataString += BME.readTemperature();
-  dataString += ',';
+    dataString += BME.readTemperature();
+    dataString += ',';
 
-  dataString += (BME.readPressure() / 100.0F);
-  dataString += ',';
+    dataString += (BME.readPressure() / 100.0F);
+    dataString += ',';
 
-  dataString += BME.readHumidity();
-  dataString += ',';
+    dataString += BME.readHumidity();
+    dataString += ',';
 
-  dataString += BME.readAltitude(seaLevelPressure);
-  dataString += ',';
+    dataString += BME.readAltitude(seaLevelPressure);
+    dataString += ',';
 
-  dataString += getCO2();
-  dataString += ',';
+    dataString += getCO2();
+    dataString += ',';
 
-  dataString += getCO2PWM();
-  dataString += ',';
+    dataString += getCO2PWM();
+    //dataString += ',';
+    
+    writeLineToFile("log.txt", dataString);
+    
+    nextReading = nextReading + (unsigned long) (10 * 1000);
+  }
  
 
-  if(nextPumpTime < millis()){
-    pump(12);
-    nextPumpTime = millis() + (unsigned long) 12 * ((unsigned long) 60 * (unsigned long) 60 * (unsigned long) 1000);
+  if ((nextPumpTime < millis()) && (!pumpOn)) {
+    digitalWrite(G328_MOS_SIG_pin, HIGH);
+    nextPumpTime = nextPumpTime + (unsigned long) (60 * 1000);
+    pumpOn = true;
   }
   
-  writeLineToFile("log.txt", dataString);
-  digitalWrite(LED_BUILTIN, HIGH);
+  if ((nextPumpTime < millis()) && pumpOn) {
+    digitalWrite(G328_MOS_SIG_pin, LOW);
+    nextPumpTime = nextPumpTime + (unsigned long) (48 * 60 * 60 * 1000 - 60 * 1000);
+    pumpOn = false;
+  }
+  
+  /*digitalWrite(LED_BUILTIN, HIGH);
   delay(9000);
   digitalWrite(LED_BUILTIN, LOW);
-  delay(1000);
+  delay(1000);*/
 }
 
 void writeLineToFile(String fileName, String string){
@@ -101,7 +116,7 @@ void writeLineToFile(String fileName, String string){
   }
   // if the file isn't open, pop up an error:
   else {
-    Serial.println("error opening datalog.txt");
+    Serial.println("error opening log.txt");
   }
 }
 
@@ -135,8 +150,8 @@ int getCO2PWM(){
 }
 
 // Pumps for x seconds
-void pump(int seconds){
+/*void pump(int seconds){
     digitalWrite(G328_MOS_SIG_pin, HIGH);
     delay(seconds * 1000);
     digitalWrite(G328_MOS_SIG_pin, LOW);
-}
+}*/

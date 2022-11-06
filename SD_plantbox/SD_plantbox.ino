@@ -6,12 +6,12 @@
 #include <SD.h>
 
 // Pins
-const int MHZ14_T_pin       = 7;  // CO2 sensor
-const int MHZ14_R_pin       = 8;  // CO2 sensor
-const int G328_MOS_SIG_pin  = 4;  // pump pin
-const int chipSelectSD      = 10; // Chip select for SD card reader
-                                  // BME uses hard coded pins
-int MHZ14_pwm_pin           = 2;
+const byte MHZ14_T_pin       = 7;  // CO2 sensor
+const byte MHZ14_R_pin       = 8;  // CO2 sensor
+const byte G328_MOS_SIG_pin  = 4;  // pump pin
+const byte chipSelectSD      = 10; // Chip select for SD card reader
+                                   // BME uses hard coded pins
+const byte MHZ14_pwm_pin     = 2;
 
 // Declare bme sensor and CO2 serial
 Adafruit_BME280 BME;
@@ -55,6 +55,7 @@ unsigned long nextPumpTime = 0;
 unsigned long nextReading = 0;
 bool pumpOn = false;
 String dataString = "";
+
 void loop() {
   if (nextReading < millis())
   {
@@ -129,7 +130,7 @@ const byte readCO2[] = {
 // Returns ppm of CO2
 int getCO2(){
   char dataValue[9];
-  int co2 = -1;
+  int co2;
 
   SerialCO2.write(readCO2, 9);  
   SerialCO2.readBytes(dataValue, 9);

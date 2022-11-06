@@ -26,7 +26,7 @@ const int span = 5000;
 void setup() {
   pinMode(G328_MOS_SIG_pin, OUTPUT);
 
-  Serial.begin(9600);
+  //Serial.begin(9600);
 
   // Begin software serial for MHZ14
   SerialCO2.begin(9600);
@@ -37,18 +37,18 @@ void setup() {
   BME.begin(0x76);
 
   // Heat up CO2 sensor
-  Serial.println("Heating up CO2 sensor (3m)");
+  //Serial.println("Heating up CO2 sensor (3m)");
   delay((unsigned long)180000);
 
   // Initialize SD card
   if (!SD.begin(chipSelectSD)) {
-    Serial.println("Card failed, or not present");
+    //Serial.println("Card failed, or not present");
     while (1);
   }
-  Serial.println("card initialized.");
+  //Serial.println("card initialized.");
 
   //First line into log
-  writeLineToFile("log.txt", "time(s),tempeature(°C),pressure(hPa),humidity(%),altitude(m),CO2(ppm),CO2PWM(ppm)");
+  writeLineToFile(F("log.txt"), F("time(s),tempeature(°C),pressure(hPa),humidity(%),altitude(m),CO2(ppm),CO2PWM(ppm)"));
 }
 
 unsigned long nextPumpTime  = 0;
@@ -82,7 +82,7 @@ void loop() {
     dataString += getCO2PWM();
     //dataString += ',';
     
-    writeLineToFile("log.txt", dataString);
+    writeLineToFile(F("log.txt"), dataString);
     
     nextReading = nextReading + (unsigned long) 10 * 1000;
   }
@@ -108,12 +108,12 @@ void writeLineToFile(String fileName, String string){
     file.println(string);
     file.close();
     // print to the serial port too:
-    Serial.println(string);
+    //Serial.println(string);
   }
   // if the file isn't open, pop up an error:
-  else {
+  /*else {
     Serial.println("error opening log.txt");
-  }
+  }*/
 }
 
 const byte readCO2[] = {

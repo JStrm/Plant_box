@@ -6,12 +6,12 @@
 #include <SD.h>
 
 // Pins
-const byte MHZ14_T_pin       = 7;  // CO2 sensor
-const byte MHZ14_R_pin       = 8;  // CO2 sensor
-const byte G328_MOS_SIG_pin  = 4;  // pump pin
-const byte chipSelectSD      = 10; // Chip select for SD card reader
-                                   // BME uses hard coded pins
-const byte MHZ14_pwm_pin     = 2;
+const byte MHZ14_T_pin       = 7;   // CO2 sensor
+const byte MHZ14_R_pin       = 8;   // CO2 sensor
+const byte G328_MOS_SIG_pin  = 4;   // Pump pin
+const byte chipSelectSD      = 10;  // Chip select for SD card reader
+const byte MHZ14_pwm_pin     = 2;   // PWM pin for CO2 sensor
+                                    // BME uses hard-coded I2C pins
 
 // Declare bme sensor and CO2 serial
 Adafruit_BME280 BME;
@@ -20,7 +20,7 @@ SoftwareSerial SerialCO2(MHZ14_T_pin, MHZ14_R_pin);
 // Pressure at sea level in HPa
 const float seaLevelPressure = 1013.25;
 
-// span
+// Reading span of CO2 sensor
 const int span = 5000;
 
 void setup() {
@@ -33,7 +33,7 @@ void setup() {
   while(!SerialCO2)
     ;
 
-  // Begin temp and pres sensor
+  // Begin temp and pressure sensor
   BME.begin(0x76);
 
   // Heat up CO2 sensor
@@ -51,8 +51,8 @@ void setup() {
   writeLineToFile("log.txt", "time(s),tempeature(°C),pressure(hPa),humidity(%),altitude(m),CO2(ppm),CO2PWM(ppm)");
 }
 
-unsigned long nextPumpTime = 0;
-unsigned long nextReading = 0;
+unsigned long nextPumpTime  = 0;
+unsigned long nextReading   = 0;
 bool pumpOn = false;
 String dataString = "";
 
@@ -84,26 +84,21 @@ void loop() {
     
     writeLineToFile("log.txt", dataString);
     
-    nextReading = nextReading + (unsigned long) (10 * 1000);
+    nextReading = nextReading + (unsigned long) 10 * 1000;
   }
  
 
   if ((nextPumpTime < millis()) && (!pumpOn)) {
     digitalWrite(G328_MOS_SIG_pin, HIGH);
-    nextPumpTime = nextPumpTime + (unsigned long) (60 * 1000);
+    nextPumpTime = nextPumpTime + (unsigned long) 60 * 1000;
     pumpOn = true;
   }
   
   if ((nextPumpTime < millis()) && pumpOn) {
     digitalWrite(G328_MOS_SIG_pin, LOW);
-    nextPumpTime = nextPumpTime + (unsigned long) (48 * 60 * 60 * 1000 - 60 * 1000);
+    nextPumpTime = nextPumpTime + (unsigned long) 48 * 60 * 60 * 1000 - (unsigned long) 60 * 1000;
     pumpOn = false;
   }
-  
-  /*digitalWrite(LED_BUILTIN, HIGH);
-  delay(9000);
-  digitalWrite(LED_BUILTIN, LOW);
-  delay(1000);*/
 }
 
 void writeLineToFile(String fileName, String string){
@@ -150,9 +145,3 @@ int getCO2PWM(){
   return ppm_pwm;
 }
 
-// Pumps for x seconds
-/*void pump(int seconds){
-    digitalWrite(G328_MOS_SIG_pin, HIGH);
-    delay(seconds * 1000);
-    digitalWrite(G328_MOS_SIG_pin, LOW);
-}*/

@@ -1,2 +1,2 @@
-# plant-box
-Code for an Arduino that controlls a box with plants
+# Plant_box
+Code for an Arduino that controls a box with plants

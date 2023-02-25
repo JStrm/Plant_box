@@ -7,6 +7,7 @@ const byte mhz14PwmPin = 9;  // PWM pin for CO2 sensor
 const byte csSdPin = 4;      // Chip select for SD card reader
 const byte pumpPin = 6;      // Pump pin
 const byte ledPin = 5;       // LED pin
+const byte photoRezistorPin = A7;
 
 const float seaLevelPressure = 1013.25;
 const int co2ReadingSpan = 5000;
@@ -25,18 +26,19 @@ Adafruit_BME280 BME;
 void setup() {
   pinMode(pumpPin, OUTPUT);
   pinMode(ledPin, OUTPUT);
+  pinMode(photoRezistorPin, INPUT);
 
   BME.begin(0x76);
 
   digitalWrite(ledPin, HIGH);
-  // delay(co2HeatUpTime);
+  delay(co2HeatUpTime);
   digitalWrite(ledPin, LOW);
 
   if (!SD.begin(csSdPin)) {
     somethingIsWrong();
   }
 
-  writeLineToFile(F("\ntime(s),temperature(°C),pressure(hPa),humidity(%),altitude(m),CO2PWM(ppm),"));
+  writeLineToFile(F("\ntime(s),temperature(°C),pressure(hPa),humidity(%),altitude(m),CO2PWM(ppm),light level"));
 }
 
 unsigned long nextPumpTime = 10000;
@@ -59,6 +61,8 @@ void loop() {
     writeToFile(String(BME.readAltitude(seaLevelPressure)));
     writeToFile(separator);
     writeToFile(String(pwmCo2Concentration()));
+    writeLineToFile(separator);
+    writeToFile(String(analogRead(photoRezistorPin)));
     writeLineToFile(separator);
 
     digitalWrite(ledPin, LOW);

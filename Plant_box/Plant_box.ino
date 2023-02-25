@@ -61,7 +61,7 @@ void loop() {
     writeToFile(String(BME.readAltitude(seaLevelPressure)));
     writeToFile(separator);
     writeToFile(String(pwmCo2Concentration()));
-    writeLineToFile(separator);
+    writeToFile(separator);
     writeToFile(String(analogRead(photoRezistorPin)));
     writeLineToFile(separator);
 

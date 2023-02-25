@@ -13,6 +13,13 @@ const int co2ReadingSpan      = 5000;
 const char filename[8]        = "log.txt";
 const byte maxSdFailCount     = 100;
 
+
+const unsigned long co2HeatUpTime = 180000;    // 3m in ms
+const unsigned long readingPeriod = 10000;    // 10s in ms
+const unsigned long pumpPause     = 86400000; // 24h in ms
+const unsigned long pumpTime      = 60000;    // 1 min in ms
+
+
 Adafruit_BME280 BME;
 
 void setup() {
@@ -22,7 +29,7 @@ void setup() {
   BME.begin(0x76);
 
   digitalWrite(ledPin, HIGH);
-  delay((unsigned long)180000); // Wait 3m for CO2 sensor to heat up
+  // delay(co2HeatUpTime);
   digitalWrite(ledPin, LOW);
 
   if (!SD.begin(csSdPin)) {
@@ -39,6 +46,8 @@ const char separator[3]     = ", ";
 
 void loop() {
   if (nextReading < millis()) {
+    digitalWrite(ledPin, HIGH);
+  
     writeToFile(String(millis() / 10000));
     writeToFile(separator);
     writeToFile(String(BME.readTemperature()));
@@ -51,18 +60,22 @@ void loop() {
     writeToFile(separator);
     writeToFile(String(pwmCo2Concentration()));
     writeLineToFile(separator);
+
+    digitalWrite(ledPin, LOW);
+
+    nextReading += readingPeriod;
   }
 
 
   if ((nextPumpTime < millis()) && !pumpOn) {
     digitalWrite(pumpPin, HIGH);
-    nextPumpTime += (unsigned long)60000;  // 1 min in ms
+    nextPumpTime += pumpTime;  
     pumpOn = true;
   }
 
   if ((nextPumpTime < millis()) && pumpOn) {
     digitalWrite(pumpPin, LOW);
-    nextPumpTime += (unsigned long)86400000;  // 24h in ms
+    nextPumpTime += pumpPause;  
     pumpOn = false;
   }
 }
@@ -96,7 +109,7 @@ void writeToFile(String string) {
   }
 }
 
-int pwmCo2Concentration() {
+unsigned long pwmCo2Concentration() {
   unsigned long th, tl, ppm_pwm = 0;
   do {
     th = pulseIn(mhz14PwmPin, HIGH, 1004000) / 1000;
@@ -110,7 +123,7 @@ int pwmCo2Concentration() {
 void somethingIsWrong() {
   while (true) {
     digitalWrite(ledPin, HIGH);
-    delay(100);
+    delay(400);
     digitalWrite(ledPin, LOW);
     delay(100);
   }

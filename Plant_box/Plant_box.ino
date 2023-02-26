@@ -12,8 +12,7 @@ const byte photoRezistorPin = A7;
 const float seaLevelPressure = 1013.25;
 const int co2ReadingSpan = 5000;
 const char filename[8] = "log.txt";
-const byte maxSdFailCount = 8;
-
+const int maxSdFailCount = 14 * 30;  // 14 writes, so if stuck for 5m stop
 
 const unsigned long co2HeatUpTime = 180000;  // 3m in ms
 const unsigned long readingPeriod = 10000;   // 10s in ms
@@ -30,15 +29,15 @@ void setup() {
 
   BME.begin(0x76);
 
-  digitalWrite(ledPin, HIGH);
-  delay(co2HeatUpTime);
-  digitalWrite(ledPin, LOW);
-
   if (!SD.begin(csSdPin)) {
     somethingIsWrong();
   }
 
-  writeLineToFile(F("\ntime(s),temperature(°C),pressure(hPa),humidity(%),altitude(m),CO2PWM(ppm),light level"));
+  digitalWrite(ledPin, HIGH);
+  delay(co2HeatUpTime);
+  digitalWrite(ledPin, LOW);
+
+  writeToFile(F("\ntime(s),temperature(°C),pressure(hPa),humidity(%),altitude(m),CO2PWM(ppm),light level\n"));
 }
 
 unsigned long nextPumpTime = 10000;
@@ -63,7 +62,8 @@ void loop() {
     writeToFile(String(pwmCo2Concentration()));
     writeToFile(separator);
     writeToFile(String(analogRead(photoRezistorPin)));
-    writeLineToFile(separator);
+    writeToFile(separator);
+    writeToFile(F("\n"));
 
     digitalWrite(ledPin, LOW);
 
@@ -84,30 +84,17 @@ void loop() {
   }
 }
 
-byte sdFailCount = 0;
-void writeLineToFile(String string) {
-  File file = SD.open(filename, FILE_WRITE);
-
-  if (file) {
-    file.println(string);
-    file.close();
-  } else {
-    sdFailCount++;
-    if (sdFailCount > maxSdFailCount) {
-      somethingIsWrong();
-    }
-  }
-}
-
+int sdFailCountInRow = 0;
 void writeToFile(String string) {
   File file = SD.open(filename, FILE_WRITE);
 
   if (file) {
     file.print(string);
     file.close();
+    sdFailCountInRow = 0;
   } else {
-    sdFailCount++;
-    if (sdFailCount > maxSdFailCount) {
+    sdFailCountInRow++;
+    if (sdFailCountInRow > maxSdFailCount) {
       somethingIsWrong();
     }
   }

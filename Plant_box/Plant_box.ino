@@ -6,13 +6,14 @@
 const byte mhz14PwmPin = 9;  // PWM pin for CO2 sensor
 const byte csSdPin = 4;      // Chip select for SD card reader
 const byte pumpPin = 6;      // Pump pin
-const byte ledPin = 5;       // LED pin
+const byte writeLedPin = 5;       
+const byte errorLedPin = 6;       
 const byte photoRezistorPin = A7;
 
 const float seaLevelPressure = 1013.25;
 const int co2ReadingSpan = 5000;
 const char filename[8] = "log.txt";
-const int maxSdFailCount = 14 * 30;  // 14 writes, so if stuck for 5m stop
+const int maxSdFailCount = 14 * 3;  // 14 writes, so if stuck for 5m stop
 
 const unsigned long co2HeatUpTime = 180000;  // 3m in ms
 const unsigned long readingPeriod = 10000;   // 10s in ms
@@ -24,7 +25,8 @@ Adafruit_BME280 BME;
 
 void setup() {
   pinMode(pumpPin, OUTPUT);
-  pinMode(ledPin, OUTPUT);
+  pinMode(writeLedPin, OUTPUT);
+  pinMode(errorLedPin, OUTPUT);
   pinMode(photoRezistorPin, INPUT);
 
   BME.begin(0x76);
@@ -33,9 +35,9 @@ void setup() {
     somethingIsWrong();
   }
 
-  digitalWrite(ledPin, HIGH);
-  delay(co2HeatUpTime);
-  digitalWrite(ledPin, LOW);
+  digitalWrite(writeLedPin, HIGH);
+  // delay(co2HeatUpTime);
+  digitalWrite(writeLedPin, LOW);
 
   writeToFile(F("\ntime(s),temperature(°C),pressure(hPa),humidity(%),altitude(m),CO2PWM(ppm),light level\n"));
 }
@@ -47,7 +49,7 @@ const char separator[3] = ", ";
 
 void loop() {
   if (nextReading < millis()) {
-    digitalWrite(ledPin, HIGH);
+    digitalWrite(writeLedPin, HIGH);
 
     writeToFile(String(millis() / 1000));
     writeToFile(separator);
@@ -65,7 +67,7 @@ void loop() {
     writeToFile(separator);
     writeToFile(F("\n"));
 
-    digitalWrite(ledPin, LOW);
+    digitalWrite(writeLedPin, LOW);
 
     nextReading += readingPeriod;
   }
@@ -109,10 +111,11 @@ int pwmCo2Concentration() {
 }
 
 void somethingIsWrong() {
-  while (true) {
-    digitalWrite(ledPin, HIGH);
+  while (!SD.begin(csSdPin)) {
+    digitalWrite(errorLedPin, HIGH);
     delay(100);
-    digitalWrite(ledPin, LOW);
-    delay(100);
+    digitalWrite(errorLedPin, LOW);
+    delay(50);
   }
+  delay(500);
 }

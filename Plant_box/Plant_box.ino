@@ -12,7 +12,7 @@ const byte photoRezistorPin = A7;
 const float seaLevelPressure = 1013.25;
 const int co2ReadingSpan = 5000;
 const char filename[8] = "log.txt";
-const byte maxSdFailCount = 100;
+const byte maxSdFailCount = 8;
 
 
 const unsigned long co2HeatUpTime = 180000;  // 3m in ms
@@ -114,15 +114,10 @@ void writeToFile(String string) {
 }
 
 int pwmCo2Concentration() {
-  while (digitalRead(mhz14PwmPin) == LOW) {};
-  long t0 = millis();
-  while (digitalRead(mhz14PwmPin) == HIGH) {};
-  long t1 = millis();
-  while (digitalRead(mhz14PwmPin) == LOW) {};
-  long t2 = millis();
-  long tH = t1 - t0;
-  long tL = t2 - t1;
-  long ppm = co2ReadingSpan * (tH - 2) / (tH + tL - 4);
+  unsigned long tH = pulseInLong(mhz14PwmPin, HIGH, 2000000L);
+  unsigned long tL = pulseInLong(mhz14PwmPin, LOW, 2000000L);
+  unsigned long ppm = co2ReadingSpan * (tH - 2) / (tH + tL - 4);
+
   return int(ppm);
 }
 

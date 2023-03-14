@@ -1,19 +1,21 @@
 #include <Wire.h>
-#include <Adafruit_BME280.h>
+// #include <Adafruit_BME280.h>
+#include <dhtnew.h>
 #include <SPI.h>
 #include <SD.h>
 
 const byte mhz14PwmPin = 9;  // PWM pin for CO2 sensor
 const byte csSdPin = 4;      // Chip select for SD card reader
-const byte pumpPin = 6;      // Pump pin
-const byte writeLedPin = 5;       
-const byte errorLedPin = 6;       
+const byte dhtPin = 7;      // Chip select for SD card reader
+const byte pumpPin = 3;      // Pump pin
+const byte writeLedPin = 5;
+const byte errorLedPin = 6;
 const byte photoRezistorPin = A7;
 
 const float seaLevelPressure = 1013.25;
 const int co2ReadingSpan = 5000;
 const char filename[8] = "log.txt";
-const int maxSdFailCount = 14 * 3;  // 14 writes, so if stuck for 5m stop
+// const int maxSdFailCount = 14 * 3;  // 14 writes, so if stuck for 5m stop
 
 const unsigned long co2HeatUpTime = 180000;  // 3m in ms
 const unsigned long readingPeriod = 10000;   // 10s in ms
@@ -21,7 +23,7 @@ const unsigned long pumpPause = 86400000;    // 24h in ms
 const unsigned long pumpTime = 60000;        // 1 min in ms
 
 
-Adafruit_BME280 BME;
+DHTNEW dhtSensor(dhtPin);
 
 void setup() {
   pinMode(pumpPin, OUTPUT);
@@ -29,7 +31,7 @@ void setup() {
   pinMode(errorLedPin, OUTPUT);
   pinMode(photoRezistorPin, INPUT);
 
-  BME.begin(0x76);
+  // BME.begin(0x76);
 
   if (!SD.begin(csSdPin)) {
     somethingIsWrong();
@@ -39,7 +41,7 @@ void setup() {
   // delay(co2HeatUpTime);
   digitalWrite(writeLedPin, LOW);
 
-  writeToFile(F("\ntime(s),temperature(°C),pressure(hPa),humidity(%),altitude(m),CO2PWM(ppm),light level\n"));
+  writeToFile(F("\ntime(s),temperature(°C),pressure(hPa),humidity(%),CO2PWM(ppm),light level\n"));
 }
 
 unsigned long nextPumpTime = 10000;
@@ -51,25 +53,29 @@ void loop() {
   if (nextReading < millis()) {
     digitalWrite(writeLedPin, HIGH);
 
-    writeToFile(String(millis() / 1000));
+    dhtSensor.read();
+
+    writeToFile(String(millis() / 1000));  // time
     writeToFile(separator);
-    writeToFile(String(BME.readTemperature()));
+    writeToFile(String(dhtSensor.getTemperature(), 2));  // temp
     writeToFile(separator);
-    writeToFile(String(BME.readPressure() / 100.0F));
+    writeToFile("0");  // pressure
     writeToFile(separator);
-    writeToFile(String(BME.readHumidity()));
+    writeToFile(String(dhtSensor.getHumidity(), 2));  // hum
     writeToFile(separator);
-    writeToFile(String(BME.readAltitude(seaLevelPressure)));
+    writeToFile(String(pwmCo2Concentration()));  //co2
     writeToFile(separator);
-    writeToFile(String(pwmCo2Concentration()));
-    writeToFile(separator);
-    writeToFile(String(analogRead(photoRezistorPin)));
+    writeToFile(String(analogRead(photoRezistorPin)));  //light
     writeToFile(separator);
     writeToFile(F("\n"));
 
     digitalWrite(writeLedPin, LOW);
+    delay(100);
 
     nextReading += readingPeriod;
+    if (nextReading < millis()) {
+      nextReading = millis() + readingPeriod;
+    }
   }
 
 
@@ -86,19 +92,20 @@ void loop() {
   }
 }
 
-int sdFailCountInRow = 0;
 void writeToFile(String string) {
   File file = SD.open(filename, FILE_WRITE);
 
-  if (file) {
-    file.print(string);
-    file.close();
-    sdFailCountInRow = 0;
-  } else {
-    sdFailCountInRow++;
-    if (sdFailCountInRow > maxSdFailCount) {
+  bool written = false;
+
+  while (!written) {
+    if (file) {
+      file.print(string);
+      file.close();
+      written = true;
+    } else {
       somethingIsWrong();
     }
+    file = SD.open(filename, FILE_WRITE);
   }
 }
 
@@ -117,5 +124,6 @@ void somethingIsWrong() {
     digitalWrite(errorLedPin, LOW);
     delay(50);
   }
+  digitalWrite(errorLedPin, LOW);
   delay(500);
 }

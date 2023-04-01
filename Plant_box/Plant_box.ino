@@ -6,19 +6,19 @@
 
 const byte mhz14PwmPin = 9;  // PWM pin for CO2 sensor
 const byte csSdPin = 4;      // Chip select for SD card reader
-const byte dhtPin = 7;      // Chip select for SD card reader
+const byte dhtPin = 7;       // Chip select for SD card reader
 const byte pumpPin = 3;      // Pump pin
-const byte writeLedPin = 5;
-const byte errorLedPin = 6;
-const byte photoRezistorPin = A7;
+const byte writeLedPin = 5;  // Pin for a blue LED
+const byte errorLedPin = 6;  // Pin for a red LED
+const byte photoRezistorPin = A5; // Pin for a photoresistor
 
-const float seaLevelPressure = 1013.25;
+//const float seaLevelPressure = 1013.25;
 const int co2ReadingSpan = 5000;
 const char filename[8] = "log.txt";
 // const int maxSdFailCount = 14 * 3;  // 14 writes, so if stuck for 5m stop
 
 const unsigned long co2HeatUpTime = 180000;  // 3m in ms
-const unsigned long readingPeriod = 10000;   // 10s in ms
+const unsigned long readingPeriod = 300000;   // 5m in ms
 const unsigned long pumpPause = 86400000;    // 24h in ms
 const unsigned long pumpTime = 60000;        // 1 min in ms
 
@@ -38,24 +38,40 @@ void setup() {
   }
 
   digitalWrite(writeLedPin, HIGH);
-  // delay(co2HeatUpTime);
+  delay(co2HeatUpTime);
   digitalWrite(writeLedPin, LOW);
 
-  writeToFile(F("\ntime(s),temperature(°C),pressure(hPa),humidity(%),CO2PWM(ppm),light level\n"));
+  //writeToFile(F("\ntime(s),temperature(°C),pressure(hPa),humidity(%),CO2PWM(ppm),light level\n"));
+  writeToFile(F("\ntime(s),temperature(°C),humidity(%),CO2PWM(ppm),light level\n"));
 }
 
 unsigned long nextPumpTime = 10000;
 unsigned long nextReading = 0;
 bool pumpOn = false;
 const char separator[3] = ", ";
+String toWrite = "";
+byte times = 0;
 
 void loop() {
   if (nextReading < millis()) {
-    digitalWrite(writeLedPin, HIGH);
-
     dhtSensor.read();
 
-    writeToFile(String(millis() / 1000));  // time
+    toWrite += String(millis() / 1000) + separator       // time
+     + String(dhtSensor.getTemperature(), 2) + separator // temperature
+     + String(dhtSensor.getHumidity(), 2) + separator    // humidity
+     + String(pwmCo2Concentration()) + separator         // CO2
+     + String(analogRead(photoRezistorPin)) + F("\n");   // light level
+    times ++;
+
+    if (times == 10) {
+      digitalWrite(writeLedPin, HIGH);
+      writeToFile(toWrite);
+      toWrite = "";
+      times = 0;
+      digitalWrite(writeLedPin, LOW);
+    }
+
+    /*writeToFile(String(millis() / 1000));  // time
     writeToFile(separator);
     writeToFile(String(dhtSensor.getTemperature(), 2));  // temp
     writeToFile(separator);
@@ -67,9 +83,8 @@ void loop() {
     writeToFile(separator);
     writeToFile(String(analogRead(photoRezistorPin)));  //light
     writeToFile(separator);
-    writeToFile(F("\n"));
+    writeToFile(F("\n"));*/
 
-    digitalWrite(writeLedPin, LOW);
     delay(100);
 
     nextReading += readingPeriod;
@@ -103,9 +118,10 @@ void writeToFile(String string) {
       file.close();
       written = true;
     } else {
+      delay(300);
       somethingIsWrong();
+      file = SD.open(filename, FILE_WRITE);
     }
-    file = SD.open(filename, FILE_WRITE);
   }
 }
 
